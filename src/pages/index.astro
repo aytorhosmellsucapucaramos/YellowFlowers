@@ -1,0 +1,188 @@
+---
+// index.astro — Ensamblador principal: Galaxia de Flores Amarillas
+import IntroZoom      from '../components/IntroZoom.astro';
+import GalaxyCanvas   from '../components/GalaxyCanvas.astro';
+import FlowerBouquets from '../components/FlowerBouquets.astro';
+import BouquetModal   from '../components/BouquetModal.astro';
+import FlowerCursor   from '../components/FlowerCursor.astro';
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description"
+      content="Una galaxia romántica de flores amarillas para celebrar el 21 de septiembre — una experiencia interactiva creada con amor." />
+    <meta property="og:title"       content="Galaxia de Flores Amarillas 🌻" />
+    <meta property="og:description" content="Una experiencia romántica e interactiva, creada con todo el amor del universo." />
+    <meta name="theme-color"        content="#020208" />
+    <title>Galaxia de Flores Amarillas 🌻 — 21 de Septiembre</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body>
+    <!-- 1. Cursor personalizado (top of stack) -->
+    <FlowerCursor />
+
+    <!-- 2. Intro warp (se elimina del DOM al terminar) -->
+    <IntroZoom />
+
+    <!-- 3. Canvas galáctico de fondo -->
+    <GalaxyCanvas />
+
+    <!-- 4. Ramos flotantes en la galaxia -->
+    <FlowerBouquets />
+
+    <!-- 5. Modales diferenciados -->
+    <BouquetModal />
+
+    <!-- 6. Título central superior (visible tras la intro) -->
+    <header id="main-header">
+      <p class="header-date">21 de Septiembre · 2026</p>
+      <p class="header-hint">
+        <span class="hint-icon">✦</span>
+        Arrastra el espacio · Toca los ramos
+        <span class="hint-icon">✦</span>
+      </p>
+    </header>
+
+    <!-- 7. Partículas flotantes decorativas adicionales (DOM layer) -->
+    <div id="floating-petals" aria-hidden="true"></div>
+  </body>
+</html>
+
+<style is:global>
+  /* ─── Reset & Base ──────────────────────────────────────────────────────── */
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: #020208;
+    color: #FFF9C4;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ─── Header principal ──────────────────────────────────────────────────── */
+  #main-header {
+    position: fixed;
+    bottom: 1.2rem;
+    left: 0;
+    right: 0;
+    z-index: 6;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    pointer-events: none;
+    background: transparent;
+    opacity: 0;
+    animation: headerReveal 1.2s ease-out 3.4s forwards;
+  }
+
+  @keyframes headerReveal {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .header-date {
+    font-size: clamp(0.65rem, 1.8vw, 0.78rem);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: #FFD70099;
+    font-weight: 500;
+  }
+
+  .header-hint {
+    font-size: clamp(0.58rem, 1.6vw, 0.7rem);
+    color: #FFD70055;
+    letter-spacing: 0.12em;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .hint-icon {
+    font-size: 0.6rem;
+    animation: hintPulse 2s ease-in-out infinite;
+  }
+
+  @keyframes hintPulse {
+    0%, 100% { opacity: 0.4; }
+    50%       { opacity: 1;   }
+  }
+
+  /* ─── Pétalos flotantes DOM ──────────────────────────────────────────────── */
+  #floating-petals {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .fp {
+    position: absolute;
+    font-size: 1.1rem;
+    opacity: 0;
+    animation: petalFall linear infinite;
+    filter: drop-shadow(0 0 4px #FFD70088);
+  }
+
+  @keyframes petalFall {
+    0%   { transform: translateY(-30px) rotate(0deg);   opacity: 0; }
+    10%  { opacity: 0.7; }
+    90%  { opacity: 0.4; }
+    100% { transform: translateY(110vh) rotate(540deg); opacity: 0; }
+  }
+
+  /* ─── Scrollbar global ───────────────────────────────────────────────────── */
+  ::-webkit-scrollbar       { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #FFD70055; border-radius: 4px; }
+</style>
+
+<script>
+// Pétalos flotantes DOM generados después de la intro
+window.addEventListener('intro-done', () => {
+  const container = document.getElementById('floating-petals');
+  if (!container) return;
+
+  const symbols = ['🌸', '🌼', '✨', '💛', '🌟', '⭐', '🌻'];
+  const COUNT   = 18;
+
+  for (let i = 0; i < COUNT; i++) {
+    const el = document.createElement('span');
+    el.className = 'fp';
+    el.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+
+    const left     = Math.random() * 100;
+    const duration = 12 + Math.random() * 20;
+    const delay    = Math.random() * 15;
+    const size     = 0.8 + Math.random() * 1.2;
+
+    el.style.cssText = `
+      left: ${left}%;
+      font-size: ${size}rem;
+      animation-duration: ${duration}s;
+      animation-delay: ${delay}s;
+    `;
+    container.appendChild(el);
+  }
+});
+</script>

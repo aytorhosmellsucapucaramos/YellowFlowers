@@ -1,0 +1,116 @@
+---
+// FlowerCursor.astro — Cursor personalizado de flor amarilla
+---
+
+<div id="flower-cursor" aria-hidden="true">
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="36"
+    height="36"
+    viewBox="0 0 100 100"
+    class="flower-svg"
+  >
+    <defs>
+      <radialGradient id="petalGrad" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#FFF176" />
+        <stop offset="100%" stop-color="#FFD600" />
+      </radialGradient>
+      <radialGradient id="centerGrad" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#FF8F00" />
+        <stop offset="100%" stop-color="#E65100" />
+      </radialGradient>
+      <filter id="glow">
+        <feGaussianBlur stdDeviation="2.5" result="coloredBlur" />
+        <feMerge>
+          <feMergeNode in="coloredBlur" />
+          <feMergeNode in="SourceGraphic" />
+        </feMerge>
+      </filter>
+    </defs>
+
+    <!-- Pétalos -->
+    <g filter="url(#glow)">
+      <ellipse cx="50" cy="22" rx="9" ry="18" fill="url(#petalGrad)" transform="rotate(0,50,50)" />
+      <ellipse cx="50" cy="22" rx="9" ry="18" fill="url(#petalGrad)" transform="rotate(45,50,50)" />
+      <ellipse cx="50" cy="22" rx="9" ry="18" fill="url(#petalGrad)" transform="rotate(90,50,50)" />
+      <ellipse cx="50" cy="22" rx="9" ry="18" fill="url(#petalGrad)" transform="rotate(135,50,50)" />
+      <ellipse cx="50" cy="22" rx="9" ry="18" fill="url(#petalGrad)" transform="rotate(180,50,50)" />
+      <ellipse cx="50" cy="22" rx="9" ry="18" fill="url(#petalGrad)" transform="rotate(225,50,50)" />
+      <ellipse cx="50" cy="22" rx="9" ry="18" fill="url(#petalGrad)" transform="rotate(270,50,50)" />
+      <ellipse cx="50" cy="22" rx="9" ry="18" fill="url(#petalGrad)" transform="rotate(315,50,50)" />
+    </g>
+
+    <!-- Centro -->
+    <circle cx="50" cy="50" r="14" fill="url(#centerGrad)" filter="url(#glow)" />
+    <circle cx="50" cy="50" r="8" fill="#BF360C" opacity="0.6" />
+  </svg>
+</div>
+
+<style>
+  #flower-cursor {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 36px;
+    height: 36px;
+    pointer-events: none;
+    z-index: 99999;
+    transform: translate(-50%, -50%);
+    transition: transform 0.08s ease-out;
+    will-change: transform;
+  }
+
+  .flower-svg {
+    animation: flowerSpin 8s linear infinite;
+    filter: drop-shadow(0 0 6px #FFD70099) drop-shadow(0 0 12px #FFA00066);
+  }
+
+  @keyframes flowerSpin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+
+  /* Ocultar en dispositivos táctiles */
+  @media (pointer: coarse) {
+    #flower-cursor { display: none; }
+  }
+</style>
+
+<script>
+  (function initFlowerCursor() {
+    const cursor = document.getElementById('flower-cursor');
+    if (!cursor) return;
+
+    // Verificar si es táctil
+    if (window.matchMedia('(pointer: coarse)').matches) return;
+
+    document.documentElement.style.cursor = 'none';
+
+    let mouseX = -200;
+    let mouseY = -200;
+    let curX   = -200;
+    let curY   = -200;
+
+    document.addEventListener('mousemove', (e: MouseEvent) => {
+      mouseX = e.clientX;
+      mouseY = e.clientY;
+    });
+
+    document.addEventListener('mouseleave', () => {
+      cursor.style.opacity = '0';
+    });
+
+    document.addEventListener('mouseenter', () => {
+      cursor.style.opacity = '1';
+    });
+
+    function animate() {
+      curX += (mouseX - curX) * 0.18;
+      curY += (mouseY - curY) * 0.18;
+      cursor.style.left = `${curX}px`;
+      cursor.style.top  = `${curY}px`;
+      requestAnimationFrame(animate);
+    }
+    animate();
+  })();
+</script>

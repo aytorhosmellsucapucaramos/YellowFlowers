@@ -1,0 +1,304 @@
+---
+// FlowerBouquets.astro — Ramos de flores distribuidos con badges flotantes
+// y detección de arrastre de la galaxia para actualizar su posición
+---
+
+<!-- Ramo 1 – "Eres mi sol ☀️" -->
+<div
+  class="bouquet"
+  id="bouquet-1"
+  data-modal="1"
+  data-base-x="20"
+  data-base-y="58"
+  role="button"
+  tabindex="0"
+  aria-label="Eres mi sol — click para abrir mensaje"
+>
+  <div class="bouquet-flowers">
+    <span class="petal-ring"></span>
+    <span class="flower-emoji main">🌻</span>
+    <span class="flower-emoji side a">🌼</span>
+    <span class="flower-emoji side b">🌸</span>
+    <span class="flower-emoji side c">🌼</span>
+    <span class="sparkle-ring"></span>
+  </div>
+  <div class="badge">Eres mi sol ☀️</div>
+</div>
+
+<!-- Ramo 2 – "Amor de mi vida 💛" -->
+<div
+  class="bouquet"
+  id="bouquet-2"
+  data-modal="2"
+  data-base-x="72"
+  data-base-y="55"
+  role="button"
+  tabindex="0"
+  aria-label="Amor de mi vida — click para abrir mensaje"
+>
+  <div class="bouquet-flowers">
+    <span class="petal-ring ring2"></span>
+    <span class="flower-emoji main">💛</span>
+    <span class="flower-emoji side a">🌻</span>
+    <span class="flower-emoji side b">🌼</span>
+    <span class="flower-emoji side c">🌸</span>
+    <span class="sparkle-ring ring2"></span>
+  </div>
+  <div class="badge">Amor de mi vida 💛</div>
+</div>
+
+<!-- Ramo 3 – "Siempre juntos 💛" -->
+<div
+  class="bouquet"
+  id="bouquet-3"
+  data-modal="3"
+  data-base-x="28"
+  data-base-y="78"
+  role="button"
+  tabindex="0"
+  aria-label="Siempre juntos — click para abrir mensaje"
+>
+  <div class="bouquet-flowers">
+    <span class="petal-ring ring3"></span>
+    <span class="flower-emoji main">🌸</span>
+    <span class="flower-emoji side a">🌼</span>
+    <span class="flower-emoji side b">🌻</span>
+    <span class="flower-emoji side c">🌸</span>
+    <span class="sparkle-ring ring3"></span>
+  </div>
+  <div class="badge">Siempre juntos 💛</div>
+</div>
+
+<!-- Ramo 4 – "Mi persona favorita 🌻" -->
+<div
+  class="bouquet"
+  id="bouquet-4"
+  data-modal="4"
+  data-base-x="68"
+  data-base-y="78"
+  role="button"
+  tabindex="0"
+  aria-label="Mi persona favorita — click para abrir mensaje"
+>
+  <div class="bouquet-flowers">
+    <span class="petal-ring ring4"></span>
+    <span class="flower-emoji main">🌻</span>
+    <span class="flower-emoji side a">🌸</span>
+    <span class="flower-emoji side b">💛</span>
+    <span class="flower-emoji side c">🌼</span>
+    <span class="sparkle-ring ring4"></span>
+  </div>
+  <div class="badge">Mi persona favorita 🌻</div>
+</div>
+
+<style>
+  /* ─── Posicionamiento base ──────────────────────────────────────────────── */
+  .bouquet {
+    position: fixed;
+    z-index: 20;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    transform: translate(-50%, -50%);
+    /* left/top se fijan desde JS */
+  }
+
+  /* ─── Grupo de flores ───────────────────────────────────────────────────── */
+  .bouquet-flowers {
+    position: relative;
+    width: 72px;
+    height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Anillo de pétalos animado */
+  .petal-ring {
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    border: 2px solid #FFD70066;
+    animation: ringRotate 8s linear infinite;
+  }
+  .ring2 { animation-direction: reverse; border-color: #FFE06655; }
+  .ring3 { animation-duration: 10s; border-color: #FFC10766; }
+  .ring4 { animation-duration: 6s;  border-color: #FFD70077; }
+
+  @keyframes ringRotate {
+    to { transform: rotate(360deg); }
+  }
+
+  /* Anillo de destellos */
+  .sparkle-ring {
+    position: absolute;
+    inset: -14px;
+    border-radius: 50%;
+    border: 1px dashed #FFD70033;
+    animation: ringRotate 14s linear infinite reverse;
+  }
+  .sparkle-ring.ring2 { animation-duration: 18s; }
+  .sparkle-ring.ring3 { animation-duration: 12s; }
+  .sparkle-ring.ring4 { animation-duration: 10s; }
+
+  /* Emoji principal */
+  .flower-emoji.main {
+    font-size: 2.5rem;
+    position: relative;
+    z-index: 2;
+    filter: drop-shadow(0 0 8px #FFD700aa);
+    animation: floatMain 3.5s ease-in-out infinite;
+  }
+
+  @keyframes floatMain {
+    0%, 100% { transform: translateY(0)   scale(1);    }
+    50%       { transform: translateY(-6px) scale(1.08); }
+  }
+
+  /* Flores laterales orbitando */
+  .flower-emoji.side {
+    position: absolute;
+    font-size: 1.2rem;
+    filter: drop-shadow(0 0 5px #FFD70088);
+  }
+
+  .flower-emoji.side.a {
+    top: -4px; left: -4px;
+    animation: orbit 6s linear infinite;
+  }
+  .flower-emoji.side.b {
+    bottom: -4px; right: -4px;
+    animation: orbit 6s linear infinite 2s;
+  }
+  .flower-emoji.side.c {
+    top: 50%; right: -14px;
+    transform: translateY(-50%);
+    animation: orbit 6s linear infinite 4s;
+  }
+
+  @keyframes orbit {
+    0%   { transform: rotate(0deg)   translateX(30px) rotate(0deg); }
+    100% { transform: rotate(360deg) translateX(30px) rotate(-360deg); }
+  }
+
+  /* ─── Badge flotante ─────────────────────────────────────────────────────── */
+  .badge {
+    background: linear-gradient(135deg, #0d0820cc, #050510dd);
+    border: 1px solid #FFD70055;
+    border-radius: 50px;
+    padding: 0.3rem 0.9rem;
+    font-family: 'Inter', sans-serif;
+    font-size: clamp(0.72rem, 1.8vw, 0.8rem);
+    font-weight: 600;
+    color: #FFE082;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    backdrop-filter: blur(6px);
+    box-shadow:
+      0 0 12px #FFD70033,
+      inset 0 1px 0 #FFD70022;
+    animation: badgeFloat 3.5s ease-in-out infinite;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  @keyframes badgeFloat {
+    0%, 100% { transform: translateY(0);    }
+    50%       { transform: translateY(-4px); }
+  }
+
+  /* ─── Hover / Focus ──────────────────────────────────────────────────────── */
+  .bouquet:hover .badge,
+  .bouquet:focus-visible .badge {
+    box-shadow:
+      0 0 20px #FFD70066,
+      0 0 40px #FFD70033,
+      inset 0 1px 0 #FFD70044;
+    transform: translateY(-6px) scale(1.04);
+  }
+
+  .bouquet:hover .flower-emoji.main,
+  .bouquet:focus-visible .flower-emoji.main {
+    filter: drop-shadow(0 0 16px #FFD700cc);
+    animation-play-state: paused;
+  }
+
+  .bouquet:focus-visible {
+    outline: 2px solid #FFD700;
+    border-radius: 16px;
+  }
+</style>
+
+<script>
+(function initBouquets() {
+  // Datos de posición base (% de viewport)
+  interface BouquetData {
+    el: HTMLElement;
+    baseX: number; // %
+    baseY: number; // %
+    modalId: string;
+  }
+
+  const bouquets: BouquetData[] = Array.from(
+    document.querySelectorAll<HTMLElement>('.bouquet')
+  ).map((el) => ({
+    el,
+    baseX: parseFloat(el.dataset.baseX!),
+    baseY: parseFloat(el.dataset.baseY!),
+    modalId: el.dataset.modal!,
+  }));
+
+  let panX = 0;
+  let panY = 0;
+
+  // Actualizar posición aplicando paralaje leve del pan de la galaxia
+  function updatePositions() {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    for (const b of bouquets) {
+      const x = (b.baseX / 100) * vw + panX * 0.4;
+      const y = (b.baseY / 100) * vh + panY * 0.4;
+      b.el.style.left = `${x}px`;
+      b.el.style.top  = `${y}px`;
+    }
+  }
+
+  // Escuchar evento de pan de GalaxyCanvas
+  window.addEventListener('galaxy-pan', (e: Event) => {
+    const detail = (e as CustomEvent<{ x: number; y: number }>).detail;
+    panX = detail.x;
+    panY = detail.y;
+    updatePositions();
+  });
+
+  window.addEventListener('resize', updatePositions);
+  updatePositions();
+
+  // Detectar si fue click o drag para no abrir modal durante drag
+  let pointerMoved = false;
+
+  bouquets.forEach(({ el, modalId }) => {
+    el.addEventListener('pointerdown', () => { pointerMoved = false; });
+    el.addEventListener('pointermove', () => { pointerMoved = true;  });
+
+    el.addEventListener('pointerup', () => {
+      if (!pointerMoved) {
+        window.dispatchEvent(new CustomEvent('open-modal', {
+          detail: { id: modalId },
+        }));
+      }
+    });
+
+    // Accesibilidad con teclado
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        window.dispatchEvent(new CustomEvent('open-modal', {
+          detail: { id: modalId },
+        }));
+      }
+    });
+  });
+})();
+</script>

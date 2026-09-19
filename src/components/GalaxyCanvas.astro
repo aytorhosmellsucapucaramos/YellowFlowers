@@ -1,0 +1,266 @@
+---
+// GalaxyCanvas.astro
+---
+
+<canvas id="galaxy-canvas"></canvas>
+
+<style>
+  #galaxy-canvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    display: block;
+    touch-action: none;
+    background: #020208;
+  }
+</style>
+
+<script>
+(function () {
+  const canvas = document.getElementById('galaxy-canvas') as HTMLCanvasElement;
+  const ctx = canvas.getContext('2d')!;
+
+  let W = 0, H = 0;
+  let offsetX = 0, offsetY = 0;
+  let dragStartX = 0, dragStartY = 0, isDragging = false;
+  let lastTouchX = 0, lastTouchY = 0;
+  let t = 0;
+  let galaxyAngle = 0;
+
+  // ── Types ──────────────────────────────────────────────────────────────────
+  interface SpiralPt { r: number; a: number; color: string; size: number; alpha: number; twinkle: number; twinkleOff: number; }
+  interface HeartPt  { tx: number; ty: number; cx: number; cy: number; size: number; alpha: number; pulse: number; pSpeed: number; color: string; }
+
+  let spiral: SpiralPt[] = [];
+  let heart: HeartPt[]   = [];
+
+  const SPIRAL_COLORS = ['#FFD700','#FFA500','#FFE066','#FFCA28','#FFF8DC','#ffffff','#FFFDE7','#FFB300'];
+  const HEART_COLORS  = ['#FFD700','#FFCA28','#FFF176','#FFE082','#FFAB00','#FFF9C4'];
+
+  // ── Build spiral (logarithmic arms) ────────────────────────────────────────
+  function buildSpiral() {
+    spiral = [];
+    const N     = 2000;
+    const ARMS  = 3;
+    const B     = 0.28;   // tightness
+    const maxR  = Math.min(W, H) * 0.46;
+
+    for (let i = 0; i < N; i++) {
+      const arm   = i % ARMS;
+      const frac  = i / N;
+      const theta = frac * Math.PI * 7;                       // total turns
+      const r     = (Math.exp(B * theta) - 1) / (Math.exp(B * Math.PI * 7) - 1) * maxR;
+      const jitter = (Math.random() - 0.5) * r * 0.22;
+
+      spiral.push({
+        r: r + jitter,
+        a: theta + (arm / ARMS) * Math.PI * 2 + (Math.random() - 0.5) * 0.18,
+        color:     SPIRAL_COLORS[Math.floor(Math.random() * SPIRAL_COLORS.length)],
+        size:      0.5 + Math.random() * 2.2,
+        alpha:     0.35 + Math.random() * 0.65,
+        twinkle:   0.6 + Math.random() * 2.5,
+        twinkleOff:Math.random() * Math.PI * 2,
+      });
+    }
+
+    // Extra dense core particles
+    for (let i = 0; i < 300; i++) {
+      const r = Math.random() * maxR * 0.12;
+      spiral.push({
+        r, a: Math.random() * Math.PI * 2,
+        color: '#FFF8DC',
+        size:  0.4 + Math.random() * 1.5,
+        alpha: 0.5 + Math.random() * 0.5,
+        twinkle: 1 + Math.random() * 3,
+        twinkleOff: Math.random() * Math.PI * 2,
+      });
+    }
+  }
+
+  // ── Build heart (700 particles) ────────────────────────────────────────────
+  function buildHeart() {
+    heart = [];
+    const N     = 700;
+    const hcx   = W / 2;
+    const hcy   = Math.min(H * 0.26, 220);
+    const scale = Math.min(W, H) * 0.095;          // bigger than before
+
+    for (let i = 0; i < N; i++) {
+      const angle = (i / N) * Math.PI * 2;
+      // add jitter points filling the interior
+      const jitter = Math.random();
+      const jAngle = Math.random() * Math.PI * 2;
+      const jFrac  = Math.sqrt(Math.random());      // uniform area fill
+      const ja     = jAngle;
+      const jScale = scale * jFrac * 0.85;
+
+      // boundary point
+      const bx = scale * 16 * Math.pow(Math.sin(angle), 3);
+      const by = -scale * (13 * Math.cos(angle) - 5 * Math.cos(2*angle) - 2 * Math.cos(3*angle) - Math.cos(4*angle));
+
+      // interior fill point using heart parametric with random scale
+      const fx = jScale * 16 * Math.pow(Math.sin(ja), 3);
+      const fy = -jScale * (13 * Math.cos(ja) - 5 * Math.cos(2*ja) - 2 * Math.cos(3*ja) - Math.cos(4*ja));
+
+      const useInterior = jitter > 0.45;
+      const tx = hcx + (useInterior ? fx : bx);
+      const ty = hcy + (useInterior ? fy : by);
+
+      heart.push({
+        tx, ty,
+        cx: tx + (Math.random() - 0.5) * 60,
+        cy: ty + (Math.random() - 0.5) * 60,
+        size:   1.2 + Math.random() * 2.8,
+        alpha:  0.6 + Math.random() * 0.4,
+        pulse:  Math.random() * Math.PI * 2,
+        pSpeed: 0.6 + Math.random() * 1.8,
+        color:  HEART_COLORS[Math.floor(Math.random() * HEART_COLORS.length)],
+      });
+    }
+  }
+
+  // ── Resize ─────────────────────────────────────────────────────────────────
+  function resize() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+    buildSpiral();
+    buildHeart();
+  }
+
+  // ── Draw ───────────────────────────────────────────────────────────────────
+  function draw() {
+    t += 0.016;
+    galaxyAngle += 0.00018;   // slow rotation
+
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = '#020208';
+    ctx.fillRect(0, 0, W, H);
+
+    const gcx = W / 2 + offsetX * 0.08;
+    const gcy = H / 2 + offsetY * 0.08 + H * 0.12;   // shift galaxy center toward lower half
+
+    // ── Galactic core radial glow ──────────────────────────────────────────
+    const coreR = Math.min(W, H) * 0.08;
+    const coreGrad = ctx.createRadialGradient(gcx, gcy, 0, gcx, gcy, coreR);
+    coreGrad.addColorStop(0,   '#FFF8DC44');
+    coreGrad.addColorStop(0.3, '#FFD70022');
+    coreGrad.addColorStop(1,   'transparent');
+    ctx.globalAlpha = 1;
+    ctx.fillStyle   = coreGrad;
+    ctx.fillRect(0, 0, W, H);
+
+    // Outer nebula haze
+    const nebulaR = Math.min(W, H) * 0.55;
+    const nebGrad = ctx.createRadialGradient(gcx, gcy, 0, gcx, gcy, nebulaR);
+    nebGrad.addColorStop(0,   '#FFD70006');
+    nebGrad.addColorStop(0.5, '#FFA50003');
+    nebGrad.addColorStop(1,   'transparent');
+    ctx.globalAlpha = 0.8;
+    ctx.fillStyle   = nebGrad;
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = 1;
+
+    // ── Spiral particles ───────────────────────────────────────────────────
+    for (const p of spiral) {
+      const angle = p.a + galaxyAngle;
+      const px = gcx + Math.cos(angle) * p.r + offsetX * 0.15;
+      const py = gcy + Math.sin(angle) * p.r * 0.42 + offsetY * 0.15;  // flatten Y → disc shape
+
+      const tw = 0.5 + 0.5 * Math.sin(t * p.twinkle + p.twinkleOff);
+      ctx.globalAlpha = p.alpha * (0.5 + 0.5 * tw);
+      ctx.fillStyle   = p.color;
+      ctx.shadowColor = p.color;
+      ctx.shadowBlur  = p.size > 1.5 ? 4 : 0;
+      ctx.beginPath();
+      ctx.arc(px, py, p.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.shadowBlur  = 0;
+    ctx.globalAlpha = 1;
+
+    // ── Heart particles ────────────────────────────────────────────────────
+    for (const p of heart) {
+      p.cx += (p.tx - p.cx) * 0.04;
+      p.cy += (p.ty - p.cy) * 0.04;
+      p.pulse += p.pSpeed * 0.016;
+
+      const beat = 0.82 + 0.18 * Math.abs(Math.sin(p.pulse * 0.5));
+      ctx.globalAlpha = p.alpha * beat;
+      ctx.fillStyle   = p.color;
+      ctx.shadowColor = p.color;
+      ctx.shadowBlur  = 10;
+      ctx.beginPath();
+      ctx.arc(p.cx, p.cy, p.size * beat, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.shadowBlur  = 0;
+    ctx.globalAlpha = 1;
+
+    // ── "Te amo 💛" label rendered on canvas ──────────────────────────────
+    const hcx   = W / 2;
+    const hcy   = Math.min(H * 0.26, 220);
+    const beat  = 0.97 + 0.03 * Math.sin(t * 1.1);
+    const fSize = Math.max(28, Math.min(W * 0.062, 58)) * beat;
+
+    ctx.globalAlpha = 0.92 + 0.08 * Math.sin(t * 1.1);
+    ctx.font        = `${fSize}px 'Great Vibes', cursive`;
+    ctx.textAlign   = 'center';
+    ctx.textBaseline= 'middle';
+
+    // outer glow layers
+    ctx.shadowColor = '#FFD700';
+    ctx.shadowBlur  = 32;
+    ctx.fillStyle   = '#FFD700';
+    ctx.fillText('Te amo 💛', hcx, hcy);
+    ctx.shadowBlur  = 16;
+    ctx.fillStyle   = '#FFF9C4';
+    ctx.fillText('Te amo 💛', hcx, hcy);
+
+    ctx.shadowBlur  = 0;
+    ctx.globalAlpha = 1;
+
+    requestAnimationFrame(draw);
+  }
+
+  // ── Pan / Drag ─────────────────────────────────────────────────────────────
+  function emitPan() {
+    window.dispatchEvent(new CustomEvent('galaxy-pan', { detail: { x: offsetX, y: offsetY } }));
+  }
+
+  canvas.addEventListener('mousedown', (e) => {
+    isDragging = true;
+    dragStartX = e.clientX - offsetX;
+    dragStartY = e.clientY - offsetY;
+    canvas.style.cursor = 'grabbing';
+  });
+  window.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    offsetX = e.clientX - dragStartX;
+    offsetY = e.clientY - dragStartY;
+    emitPan();
+  });
+  window.addEventListener('mouseup', () => { isDragging = false; canvas.style.cursor = 'default'; });
+
+  canvas.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 1) { isDragging = true; lastTouchX = e.touches[0].clientX; lastTouchY = e.touches[0].clientY; }
+  }, { passive: true });
+  canvas.addEventListener('touchmove', (e) => {
+    if (!isDragging || e.touches.length !== 1) return;
+    offsetX += e.touches[0].clientX - lastTouchX;
+    offsetY += e.touches[0].clientY - lastTouchY;
+    lastTouchX = e.touches[0].clientX;
+    lastTouchY = e.touches[0].clientY;
+    emitPan();
+  }, { passive: true });
+  canvas.addEventListener('touchend', () => { isDragging = false; }, { passive: true });
+
+  // ── Init ───────────────────────────────────────────────────────────────────
+  window.addEventListener('resize', resize);
+  resize();
+  draw();
+})();
+</script>
